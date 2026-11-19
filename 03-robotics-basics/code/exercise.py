@@ -6,7 +6,12 @@ from robotics_demo import rotate2d
 def optical_to_link(point_optical):
     """理想共原点安装：光学 X右Y下Z前 → link X前Y左Z上。"""
     # 基础 1：根据前、左、上对应的光学分量，返回三个坐标。
-    raise NotImplementedError("请完成光学坐标换轴")
+    x_optical, y_optical, z_optical = point_optical
+    link_x = z_optical
+    link_y = -x_optical
+    link_z = -y_optical
+    return (link_x, link_y, link_z)
+    
 
 
 def aim_angles(point_reference):
@@ -16,7 +21,16 @@ def aim_angles(point_reference):
     如果输入有非有限值，或水平距离 <= 1e-12 m，应抛出 ValueError。
     """
     # 基础 2：使用 isfinite、hypot 和 atan2，实现上述约定。
-    raise NotImplementedError("请完成几何角度计算")
+    x, y, z = point_reference
+    if not (math.isfinite(x) and math.isfinite(y) and math.isfinite(z)):
+        raise ValueError("输入包含非有限值")
+    horizontal_distance = math.hypot(x, y)
+    if horizontal_distance <= 1e-12:
+        raise ValueError("水平距离过小")
+    yaw = math.atan2(y, x)
+    elevation = math.atan2(z, horizontal_distance)
+    return (yaw, elevation)
+    
 
 
 def small_yaw_to_base(point_small, big_yaw, small_yaw, small_offset, big_offset):
@@ -30,4 +44,14 @@ def small_yaw_to_base(point_small, big_yaw, small_yaw, small_offset, big_offset)
     """
     # 进阶：调用两次 rotate2d，分别得到 L、B 中的水平分量。
     # 每次旋转后加该段偏移，Z 只累加对应的高度偏移。
-    raise NotImplementedError("请完成小 yaw 到大 yaw、底盘的连续变换")
+    x_s, y_s, z_s = point_small
+    x_rotated_L, y_rotated_L = rotate2d(x_s, y_s, small_yaw)
+    x_L = x_rotated_L + small_offset[0]
+    y_L = y_rotated_L + small_offset[1]
+    z_L = z_s + small_offset[2]
+    x_B, y_B = rotate2d(x_L, y_L, big_yaw)
+    x_B = x_B + big_offset[0]
+    y_B = y_B + big_offset[1]
+    z_B = z_L + big_offset[2]
+    return (x_B, y_B, z_B)
+    
